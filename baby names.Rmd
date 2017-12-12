@@ -1,0 +1,66 @@
+---
+title: "baby names"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+```{r, echo=FALSE, message=FALSE ,warning=FALSE}
+library(tidyverse); library(babynames); library(plotly); library(ggthemes)
+```
+
+```{r, echo=FALSE}
+all_names <- babynames #get names from the package
+t_names <- all_names %>%
+  group_by(year, sex) %>%
+  top_n(1, n) %>%
+  ungroup()
+sum_names <- all_names %>%
+  group_by(name, sex) %>%
+  summarise(Max=max(n),
+            Total=sum(n)) %>%
+  ungroup()
+top_year <- all_names %>%
+  group_by(name, sex) %>%
+  arrange(n) %>%
+  top_n(1, n) %>%
+  rename(TopYear = year) %>%
+  select(-n, -prop) %>%
+  ungroup()
+top_names <- t_names %>%
+  left_join(sum_names, by = c("name" = "name", "sex" = "sex")) %>%
+  left_join(top_year, by = c("name" = "name", "sex" = "sex")) %>%
+  mutate(name = as.factor(name),
+         sex = as.factor(if_else(sex == "M", "Male", "Female", "?")),
+         shp = as.factor(if_else(sex == "Male", 16, 18)))
+```
+
+```{r, echo=FALSE}
+plotnames <- ggplot(data=top_names, colour=name) +
+  geom_line(aes(x=year, y=n, colour=name), show.legend = FALSE) +
+  geom_point(aes(x=year, y=n, fill=name), show.legend = FALSE) +
+  geom_point(aes(x=TopYear, y=Max, colour=name), shape=10, size=2, show.legend = FALSE) +
+  theme_economist(base_size = 7) +
+  labs(x="Year", y="Number per year",
+       title="Most Common U.S. Baby Names Through the Years",
+       subtitle="(dash-dot line is female names, dotted line male names)",
+       caption="Source: https://www.ssa.gov/oact/babynames/")
+gp <- ggplotly(plotnames)
+```
+
+```{r plotly842, echo=FALSE, fig.height=8, fig.width=10}
+#legend problems connecting ggplot and plotly
+#https://github.com/ropensci/plotly/issues/842
+for (i in 1:length(gp$x$data)){ #only the 1st instance of x has data
+  #print(paste("i=", i))
+    gp$x$data[[i]]$name <- str_replace(gp$x$data[[i]]$name,"\\(","") #replace opening paren
+    gp$x$data[[i]]$name <- str_replace(gp$x$data[[i]]$name,",.*","") #replace the comma + anything after
+    #gp$x$data[[i]]$legendgroup <- str_replace(gp$x$data[[i]]$name,"\\(","") #don't need these
+    #gp$x$data[[i]]$legendgroup <- str_replace(gp$x$data[[i]]$name,",.*","") 
+  }  
+gp
+
+```
+
+
