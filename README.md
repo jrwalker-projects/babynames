@@ -6,4 +6,4 @@ trend in baby names over the years
 includes a chart of most common girl & boy names in each year from 1880
 the chart is interactive using plotly
 
-1[most chosen US girl & boy names for each year](https://github.com/jrwalker-projects/babynames/blob/master/common.jpeg)
+![most chosen US girl & boy names for each year](https://github.com/jrwalker-projects/babynames/blob/master/common.jpeg)
