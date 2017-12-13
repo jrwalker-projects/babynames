@@ -32,8 +32,8 @@ top_names <- t_names %>%
   left_join(sum_names, by = c("name" = "name", "sex" = "sex")) %>%
   left_join(top_year, by = c("name" = "name", "sex" = "sex")) %>%
   mutate(name = as.factor(name),
-         sex = as.factor(if_else(sex == "M", "Male", "Female", "?")),
-         shp = as.factor(if_else(sex == "Male", 16, 18)))
+         sex = as.factor(sex)) %>%
+  select(-prop)
 ```
 
 ```{r, echo=FALSE}
@@ -43,13 +43,12 @@ plotnames <- ggplot(data=top_names, colour=name) +
   geom_point(aes(x=TopYear, y=Max, colour=name), shape=10, size=2, show.legend = FALSE) +
   theme_economist(base_size = 7) +
   labs(x="Year", y="Number per year",
-       title="Most Common U.S. Baby Names Through the Years",
-       subtitle="(dash-dot line is female names, dotted line male names)",
+       title="Most Common U.S. Girl & Boy Names Each Year",
        caption="Source: https://www.ssa.gov/oact/babynames/")
 gp <- ggplotly(plotnames)
 ```
 
-```{r plotly842, echo=FALSE, fig.height=8, fig.width=10}
+```{r plotly842, echo=FALSE, fig.height=8, fig.width=10, warning=FALSE, message=FALSE}
 #legend problems connecting ggplot and plotly
 #https://github.com/ropensci/plotly/issues/842
 for (i in 1:length(gp$x$data)){ #only the 1st instance of x has data
@@ -61,6 +60,74 @@ for (i in 1:length(gp$x$data)){ #only the 1st instance of x has data
   }  
 gp
 
+```
+
+
+```{r, echo=FALSE }
+
+
+top_curve <- top_names %>%
+  mutate(name = as.character(name),
+         sex = as.character(sex),
+         alp = 1) %>%
+  inner_join(all_names, by = c("name" = "name", "sex" = "sex")) %>%
+  mutate(name = as.factor(name),
+         sex = as.factor(sex))
+
+```
+
+```{r ggforpic, echo=FALSE}
+#just to have a picture to save for the readme
+picnames <- ggplot(data=top_names, colour=name) +
+  geom_line(aes(x=year, y=n, colour=name)) +
+  geom_point(aes(x=year, y=n, fill=name)) +
+  geom_point(aes(x=TopYear, y=Max, colour=name), shape=10, size=2, show.legend = FALSE) +
+  theme_economist(base_size = 7) +
+  theme(legend.position="right") +
+  labs(x="Year", y="Number per year",
+       title="Most Common U.S. Baby Names Through the Years",
+       caption="Source: https://www.ssa.gov/oact/babynames/")
+```
+
+```{r gendflip, echo=FALSE, message=FALSE, warning=FALSE}
+gflip <- all_names %>%
+  select(-prop) %>%
+  group_by(name, year) %>%
+  top_n(1, n) %>%
+  ungroup()
+f_names <- gflip %>% 
+  group_by(name, sex) %>%
+  summarise(n=sum(n)) %>%
+  ungroup() %>%
+  spread(key=sex, value=n, fill=0) %>%
+  filter(F > 16000, M > 16000) %>%
+  mutate(s=F+M) %>%
+  top_n(20, s) %>% 
+  select(name) %>% 
+  left_join(all_names) %>%
+  select(-prop) %>%
+  mutate(name = as.factor(name),
+         sex = as.factor(sex),
+         namegrp = as.factor(paste0(name,"-",sex)))
+```
+
+```{r, echo=FALSE, fig.height=8, fig.width=10, warning=FALSE, message=FALSE}
+#f_names <- f_names %>% filter(name == "Angel")
+
+flipnames <- ggplot(data=f_names, aes(text=name, x=year, y=n, colour=sex)) +
+  geom_line(size=0.2) +
+  geom_point(aes(shape=sex), size=1.5) +
+  scale_color_manual(values=c("#1f78b4", "#33a02c")) +
+  scale_shape_manual(values=c(1,4)) +
+  facet_wrap(~name, scales= "free") +
+  theme_fivethirtyeight(base_size = 7) +
+  theme(strip.text = element_text(size=14)) +
+  labs(x="Year", y="Number per year",
+       title="Girl / Boy Names Switch in Popularity",
+       subtitle="(US baby names)",
+       caption="Source: https://www.ssa.gov/oact/babynames/")
+fp <- ggplotly(flipnames, tooltip=c("text", "y", "colour", "x"))
+hide_legend(fp)
 ```
 
 
