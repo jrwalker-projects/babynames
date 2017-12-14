@@ -1,5 +1,5 @@
 ---
-title: "baby names"
+title: "Data visualization of U.S. baby names"
 output:
   html_document:
     df_print: paged
@@ -10,22 +10,28 @@ output:
 library(tidyverse); library(babynames); library(plotly); library(ggthemes)
 ```
 
+###Report sections:
+
+[Popular names over time] <br>
+[Popularity can switch] <br>
+[We keep making Percivals, just not many]<br>
+
 ```{r, echo=FALSE}
 all_names <- babynames #get names from the package
-t_names <- all_names %>%
+t_names <- all_names %>% #
   group_by(year, sex) %>%
   top_n(1, n) %>%
   ungroup()
 sum_names <- all_names %>%
   group_by(name, sex) %>%
-  summarise(Max=max(n),
+  summarise(Max=max(n), #peak number for the name/sex
             Total=sum(n)) %>%
   ungroup()
 top_year <- all_names %>%
   group_by(name, sex) %>%
   arrange(n) %>%
   top_n(1, n) %>%
-  rename(TopYear = year) %>%
+  rename(TopYear = year) %>% #remember peak year for the name might be a year where that name is most the top
   select(-n, -prop) %>%
   ungroup()
 top_names <- t_names %>%
@@ -36,7 +42,7 @@ top_names <- t_names %>%
   select(-prop)
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 plotnames <- ggplot(data=top_names, colour=name) +
   geom_line(aes(x=year, y=n, colour=name), show.legend = FALSE) +
   geom_point(aes(x=year, y=n, fill=name), show.legend = FALSE) +
@@ -48,6 +54,11 @@ plotnames <- ggplot(data=top_names, colour=name) +
 gp <- ggplotly(plotnames)
 ```
 
+This example of data visualization using U.S. baby names is based on a data provided by the Social Security Administration (SSA) at [SSA baby names](https://www.ssa.gov/oact/babynames/decades/century.html) and packaged by Hadley Wickham for use in R in the `babynames` [package](https://cran.r-project.org/web/packages/babynames/index.html). The data itself and the visualizations here are decidedly gender binary - not as part of an agenda, that's what we have for now.
+
+#Popular names over time
+
+The first chart shows the most popular girl and boy names for each year - data starts from 1880. Hover over data points to see more information. Dots without the black circle show the peak year for that name. 1947 was at the start of the U.S. baby boom and was the peak year for popular names Linda, James, Robert and John. Robert took over from John in 1924 then overtaken by James in '40 only to stage a comeback for '53 before Michael started a long run at the top. From '47 to '52 Linda took the lead only to give the lead back to long time leader Mary in '53. 1987-1993 Jessica and Ashley traded the lead back and forth. After 1990 use of the most common names declined significantly (just as it had risen from 1911) with new leaders Jacob, Emily, Emma, Isabella, Sophia and Noah. 
 ```{r plotly842, echo=FALSE, fig.height=8, fig.width=10, warning=FALSE, message=FALSE}
 #legend problems connecting ggplot and plotly
 #https://github.com/ropensci/plotly/issues/842
@@ -59,13 +70,9 @@ for (i in 1:length(gp$x$data)){ #only the 1st instance of x has data
     #gp$x$data[[i]]$legendgroup <- str_replace(gp$x$data[[i]]$name,",.*","") 
   }  
 gp
-
 ```
 
-
 ```{r, echo=FALSE }
-
-
 top_curve <- top_names %>%
   mutate(name = as.character(name),
          sex = as.character(sex),
@@ -73,7 +80,6 @@ top_curve <- top_names %>%
   inner_join(all_names, by = c("name" = "name", "sex" = "sex")) %>%
   mutate(name = as.factor(name),
          sex = as.factor(sex))
-
 ```
 
 ```{r ggforpic, echo=FALSE}
@@ -85,7 +91,7 @@ picnames <- ggplot(data=top_names, colour=name) +
   theme_economist(base_size = 7) +
   theme(legend.position="right") +
   labs(x="Year", y="Number per year",
-       title="Most Common U.S. Baby Names Through the Years",
+       title="Most Common U.S. Girl & Boy Names Each Year",
        caption="Source: https://www.ssa.gov/oact/babynames/")
 ```
 
@@ -111,9 +117,15 @@ f_names <- gflip %>%
          namegrp = as.factor(paste0(name,"-",sex)))
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=10, warning=FALSE, message=FALSE}
-#f_names <- f_names %>% filter(name == "Angel")
+#Popularity can switch
 
+Some names switch from being popular girl names to boy names or vice versa with some different patterns over time:
+
+ - A name can become popular for both girls and boys where popularity competes: Angel, Jackie, Peyton, Taylor
+ - Names switch in popularity: girl to boy (Frankie) and boy to girl (Kerry, Leslie, Sidney) 
+ - A name spikes briefly for one group: Jaime
+ - or there's a more complex pattern over time: Harley, Jessie
+```{r, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE, message=FALSE}
 flipnames <- ggplot(data=f_names, aes(text=name, x=year, y=n, colour=sex)) +
   geom_line(size=0.2) +
   geom_point(aes(shape=sex), size=1.5) +
@@ -129,5 +141,88 @@ flipnames <- ggplot(data=f_names, aes(text=name, x=year, y=n, colour=sex)) +
 fp <- ggplotly(flipnames, tooltip=c("text", "y", "colour", "x"))
 hide_legend(fp)
 ```
+```{r nicklist, eval=FALSE, echo=FALSE}
+M_list <- c('Mic','Mykell','Mykel','Myke','Mykal','Myk','Mychal','Mychael','Mitt','Mitchie','Mitch','Miko','Mikki','Miki','Mikha','Mikey','Mike','Micky','Mickie','Micki','Mickey','Mick','Micheal','Michale','Michail','Mical','Mac','Miska','Misi','Misha','Mischa','Miquel','Mikko','Mikkel','Mikk','Mikhos','Mikhail','Mikel','Mikael','Mihkel','Mihangel','Mihály','Mihai','Miguel','Mietek','Michon','Micho','Michele','Michel','Micheil','Mícheál','Michal','Michael','Micha','Micah','Mica','Meical','Makis'
+)
+S_list <- c('Sarah', 'Sasha','Sasa','Sarita','Sari','Sar-Bear','Sarah-Bearah','Sarah-Bear','Sar','Sally','Salley','Saira','Sadie','Sadee','Rya','Ara',' Sasa',' Sarrah',' Sarra',' Sari',' Saree',' Sara',' Sally',' Sallie',' Sallee',' Sal',' Sairah',' Saidee',' Sadye',' Sadie'
+)
+E_list <- c('Elizabeth', 'Zippy','Zibby','Zea','Zabby','Tibby','Tess','Lizzy','Lizzie','Lizie','Lizi','Lizbeth','Lizbet','Lizabeth','Liza-Bella','Liza-Bell','Liza','Liz','Lisi','Lisa','Liesl','Liby','Libby','Libbie','Libbi','Libba','Lib','Lettie','Lea','Izzy-Bizzy','Izzy','Izzie','Izzi','Izza','Izz','Izabeth','Iza','Issa','Isa','Ilsa','Etta','Emmy','Elzie','Elsvette','Elsvetta','Elsvett','Elspeth','Elsie','Elsbeth','Elsa','Elly','Ellie-Bellie','Ellie','Elle','Ella-Beth','Ella-Bell','Ella','Elize','Elizabelle','Elizabella','Elizabell','Eliza','Elise','Elisa','Eli','El-Bell','El','Effy','Effie','Effia','Ebby','Cutty','Buffy','Bizzy','Bitty','Bitsy','Birdie','Biff','Betty','Bettina','Bettie','Betters','Bette','Betsy','Bethy','Beth','Bet','Bessie','Bess','Belly','Bellie','Belle','Bella','Bell','Beli','Bee','Babet'
+)
+M_names <- all_names %>% 
+  filter(name %in% M_list, 
+         sex=="M") %>%
+  mutate(nickname="Michael")
+S_names <- all_names %>% 
+  filter(name %in% S_list,
+         sex=="F") %>%
+  mutate(nickname="Sarah")
+E_names <- all_names %>% 
+  filter(name %in% E_list,
+         sex=="F") %>%
+  mutate(nickname="Elizabeth")
+nick_full <- rbind(M_names, S_names, E_names) 
+nick_names <- nick_full %>%
+  group_by(name) %>%
+  summarise(Sum=sum(n)) %>%
+  top_n(12, Sum) %>%
+  select(name) %>%
+  ungroup() %>%
+  left_join(nick_full) %>%
+  mutate(n = log10(n))
+```
+```{r, eval=FALSE, echo=FALSE, fig.height=8, fig.width=10, warning=FALSE, message=FALSE}
+xx <- nick_names %>%
+  filter(name=="Sarah")
+
+nicknames <- ggplot(data=nick_names, aes(text=nickname, x=year, y=n)) +
+  geom_line(size=0.5, aes(colour=name), show.legend = FALSE) +
+  geom_point(aes(shape=sex, colour=name), size=1.5, show.legend = FALSE) +
+#  scale_color_manual(values=c("#e41a1c","#377eb8", "#4daf4a")) +
+  scale_shape_manual(values=c(1,4)) +
+  facet_wrap(~nickname, scales= "free") +
+  theme_fivethirtyeight(base_size = 7) +
+  theme(strip.text = element_text(size=14)) +
+  labs(x="Year", y="Number per year",
+       title="Girl / Boy Names Switch in Popularity",
+       subtitle="(US baby names)",
+       caption="Source: https://www.ssa.gov/oact/babynames/")
+nicknames
+np <- ggplotly(nicknames, tooltip=c("text", "y", "colour", "x"))
+hide_legend(np)
+```
+
+```{r, echo=FALSE}
+rare_name <- all_names %>%
+  filter(n < 10) %>%
+  group_by(name, sex) %>%
+  summarise(Years=length(name),
+            Max=max(n)) %>%
+  ungroup() %>%
+  arrange(desc(Years)) %>%
+  top_n(40, Years) %>% 
+  arrange(Years, desc(name)) %>%
+  mutate(Name=factor(name, levels=name),
+         Sex=factor(sex))
+```
+
+#We keep making Percivals, just not many
+
+Some names are not popular at all yet remain in use over long periods. The chart below shows the number of years a name had less than ten babies, for example, there have been 88 years (out of `r 2016-1880` years in the database) of at least one but less than 10 Percivals coming in to the world.
+```{r, echo=FALSE, fig.height=8, fig.width=10, message=FALSE, warning=FALSE}
+rarenames <- ggplot(data=rare_name) +
+  geom_bar(aes(x=Name, y=Years, fill=Sex), stat="identity") + 
+  scale_x_discrete() +
+  scale_fill_manual(values=c("#1f78b4", "#33a02c")) +
+  coord_flip() +
+  theme_bw() +
+  theme(axis.title.y=element_blank()) +
+  labs(x="Years with less than 10",
+       title="Persistent Unpopular U.S. Baby Names",
+       subtitle="Years with less than 10",
+       caption="Source: https://www.ssa.gov/oact/babynames/")
+rp <- ggplotly(rarenames)
+rp
+```
+
 
 
